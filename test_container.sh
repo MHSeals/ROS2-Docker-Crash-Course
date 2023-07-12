@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
+TEST_OS=windows
+TEST_GPU=intel
+
 docker run \
     --tty \
-    --interactive \
     --rm \
     --privileged \
     --gpus all \
@@ -15,5 +17,5 @@ docker run \
     -v /usr/lib/wsl:/usr/lib/wsl \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /mnt/wslg:/mnt/wslg \
-    ariac:2023 \
-    bash
+    roboboat:${TEST_OS}-${TEST_GPU} \
+    glxinfo | grep "OpenGL"
