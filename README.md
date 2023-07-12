@@ -24,7 +24,7 @@ and let it run. You will need to approve the installation at some point if you h
 
 2. (Optional) You may want to limit WSL 2 resources consumption by hard-limiting it via [.wslconfig](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig). To do this, you need to create a `.wslconfig` file at your user directory, which is usually `C:\Users\your_username`, and put the following content in it
 
-```coffee
+```
 # Settings apply across all Linux distros running on WSL 2
 [wsl2]
 
