@@ -2,6 +2,8 @@
 
 TL;DR: Mac users are borked and limited to CLI tools only. Windows users are semi-borked because for some reason on some machines it renders and runs well, on others it's just a black screen. Linux (Ubuntu) users are in the clear, although other distro will need more testing.
 
+> ⚠️ For now, proceed to [The Construct](https://www.theconstructsim.com/robotigniteacademy_learnros/ros-courses-library/) and learn more about ROS there until I figure out some simulation stuff for your boat.
+
 Consequently, I will use Linux and Ubuntu interchangably. I know some of you Fedora/Arch/Debian folks will be mildly (or not so mildly) triggered. You're going to have to live with it, because officially ROS only supports Ubuntu, and all of their instructions assumes you are on the latest LTS version of Ubuntu.
 
 For now markdown is the quickest to draft up a doc. Yes it is ugly and horribly unreadable considering how all the headings are omega similar, at least to me. See Issues for further planned improvements.

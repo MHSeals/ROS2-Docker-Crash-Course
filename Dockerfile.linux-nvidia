@@ -1,0 +1,35 @@
+# based on OSRF ROS 2 images
+FROM osrf/ros:humble-desktop-full-jammy
+
+# no prompts from apt-get
+ARG DEBIAN_FRONTEND=noninteractive
+
+# use bash as primary shell for RUN commands
+SHELL [ "/bin/bash", "-c" ]
+
+# switch to a Dallas mirror if download speed is low
+# RUN cp /etc/apt/sources.list /etc/apt/sources.list.original && \
+#     sed -i -r 's,http://(.*).ubuntu.com,http://mirror.us-tx.kamatera.com,' /etc/apt/sources.list
+
+# installing initial setup packages
+RUN apt-get update && apt-get -y --no-install-recommends install \
+    git \
+    curl \
+    wget \
+    build-essential \
+    cmake \
+    lsb-release \
+    gnupg \
+    gnupg2 \
+    locales \
+    software-properties-common \
+    && apt-get -y autoremove \
+    && apt-get clean
+
+# install network diagnostic tools
+RUN apt-get update && apt-get -y --no-install-recommends install \
+    net-tools \
+    iputils-ping \
+    netcat \
+    && apt-get -y autoremove \
+    && apt-get clean
