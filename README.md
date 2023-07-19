@@ -1,153 +1,171 @@
-# ROS and Docker Crash Course
+# Roboboat Dockerized Environment
 
-TL;DR: Mac users are borked and limited to CLI tools only. Windows users are semi-borked because for some reason on some machines it renders and runs well, on others it's just a black screen. Linux (Ubuntu) users are in the clear, although other distro will need more testing.
+## Development Status
 
-> ⚠️ For now, proceed to [The Construct](https://www.theconstructsim.com/robotigniteacademy_learnros/ros-courses-library/) and learn more about ROS there until I figure out some simulation stuff for your boat.
+| Operating System | Status |
+|------------------|:------:|
+| Windows          |   ✅   |
+| MacOS/Apple      |   ❌   |
+| Ubuntu           |   ✅   |
+| Fedora           |   ❓   |
+| Debian           |   ❓   |
+| Arch             |   ❓   |
 
-Consequently, I will use Linux and Ubuntu interchangably. I know some of you Fedora/Arch/Debian folks will be mildly (or not so mildly) triggered. You're going to have to live with it, because officially ROS only supports Ubuntu, and all of their instructions assumes you are on the latest LTS version of Ubuntu.
+🐳 Docker Hub Image Push: **Incomplete**
 
-For now markdown is the quickest to draft up a doc. Yes it is ugly and horribly unreadable considering how all the headings are omega similar, at least to me. See Issues for further planned improvements.
+## Quick Start
 
-## Initial Preparation 🔧
 
-It is probably a good idea to use the latest graphics driver available at the time of reading this, whether it is Intel, NVIDIA, or AMD. Different OS do this differently, so I won't include it here.
+### Install Docker
 
-### Windows 
+For Windows, use Docker Desktop. Download at https://www.docker.com/products/docker-desktop/.
 
-1. Install WSL 2 using [official instructions from Microsoft](https://learn.microsoft.com/en-us/windows/wsl/install#install-wsl-command), or just open an elevated terminal/powershell and run
+For Linux, use `sudo apt install docker.io` and complete the following:
 
-```
-C:> wsl --install -d Ubuntu-22.04
-```
+1. Post Installation steps for Linux. See https://docs.docker.com/engine/install/linux-postinstall/.
+2. (Optional for NVIDIA) Install NVIDIA Container Toolkit. See https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#setting-up-nvidia-container-toolkit.
 
-and let it run. You will need to approve the installation at some point if you have User Account Control (UAC) enabled. After a required restart, you will be prompt for a username and password for your WSL 2.
-
-2. (Optional) You may want to limit WSL 2 resources consumption by hard-limiting it via [.wslconfig](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig). To do this, you need to create a `.wslconfig` file at your user directory, which is usually `C:\Users\your_username`, and put the following content in it
-
-```
-# Settings apply across all Linux distros running on WSL 2
-[wsl2]
-
-# Limits VM memory to use no more than 4 GB, this can be set as whole numbers using GB or MB
-memory=4GB 
-
-# Sets the VM to use two virtual processors
-processors=2
-```
-
-You can change this to whatever you're comfortable with or doesn't slow your workstation down. However, if possible, the lowest I would personally go is 4 processors and 8GB of RAM.
-
-### MacOS
-
-Similar to Windows, you may want to limit your resource usage, but instead of doing it through a file, you have the option to do it in the Docker Desktop GUI.
-
-TODO: Borrow someone's Macbook to get a picture of the screen.
-
-### Linux
-
-TODO: Find out if limiting resources through UI is an option. It is only CLI for now.
-
-## Docker Installation 🐋
-
-I mulled over the use of distribution based Docker installation (through apt, etc.), but decided against it for the sake of uniformity. Aside from Linux, MacOS, and Ubuntu, you will need to find your instructions on how to install Docker Desktop on your machine.
-
-See [Official Docker Desktop Installation Instruction](https://docs.docker.com/desktop/) for more details.
-
-### Windows
-
-Download the installer executable, run it, and restart your machine. Once you're back, check within WSL 2 if Docker is accessible. Be patient, Docker Desktop will take awhile to come online. Sample output from your WSL may look like this
-
-![](Images/windows_docker.png)
-
-If you get to this screen, you're ready to rock!
-
-### MacOS
-
-Download the installer and do your Mac Application drag and drop thing then start it. Confirm your installation upon gaining access to Docker through your terminal. MacOS permission is handled however it is handled, but it seems to work right out of the box.
-
-TODO: Borrow someone's Macbook to get a picture of the screen.
-
-### Linux
-
-Mildly more complicated, but not horrible. It boils down to some security stuff, if you're interested, but otherwise it just mean that Docker will run as root 100% of the time and there are some implications, see [Docker Daemon Attack Surface](https://docs.docker.com/engine/security/#docker-daemon-attack-surface) for more details.
-
-You can follow [official instructions](https://docs.docker.com/engine/install/linux-postinstall/) or just copy-paste the tl;dr commands below
+Test your installation with `docker run --rm hello-world`. You should see:
 
 ```
-$ sudo usermod -aG docker $USER
+mqt00xx@RVL-PRECISION-001:~$ docker run --rm hello-world
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/
+
+mqt00xx@RVL-PRECISION-001:~$
 ```
 
-Restart or Relogin your account at this point. Once back in, open a new terminal and run
+### Clone this Repo
+
+Setup SSH Key if you haven't already. See https://docs.github.com/en/authentication/connecting-to-github-with-ssh/about-ssh.
+
+Boils down to:
+
+1. Create a key
+
+> ⚠️ If you already have a public-private key pair and your SSH Agent is aware of it, skip to step 3
 
 ```
-$ newgrp docker
+ssh-keygen -t ed25519 -C "your_email@example.com"
 ```
 
-You should now be able to run docker without the need of `sudo` to access the backend stuff (daemon, socket, etc.). Test it with
+Just hit Enter to continue with default values.
+
+2. Add key to SSH Agent
+
+You will need to start an agent first
 
 ```
-$ docker run --rm hello-world
+eval "$(ssh-agent -s)"
 ```
 
-The output should match exactly as shown in the picture above.
-
-## Docker 101 📝
-
-The starting point of all Docker container is a Docker Image. But in order to obtain or create an image, we need a Dockerfile. While you do not need to be comfortable with writing your own Dockerfile, I highly recommend that you do learn how to use them.
-
-![](Images/docker1.png)
-
-### But, why? 🤔
-
-- Uniformity: Environment in which apps are deployed will be virtually identical. This solves a lot of headache in trying to recreate a similar, if not identical, working setup on someone else's computer.
-- Isolation: If you do mess up, it's contained. Your host system remains unaffected (mostly) by whatever is going on in the container. Caveat: this relies heavily on how you control what container can and cannot do, but it is quite isolated by default.
-- Flexibility: You may break a large application into smaller applications across different containers, so if any of those break, they are readily replaceable without intefering with other services.
-- Scalability: And because you can easily replace them, you can also easily add more.
-
-In our case, Docker unifies the deployment of ROS across all of our members' PCs, including the ones that will be on the boat itself. From there, we can leverage ROS to do more complicated things without having to worry about some interfacing stuff.
-
-### Dockerfile
-
-This is the blueprint that will define how a Docker image is constructed. I have included several to try and cover a wide range of OS. They may look similar at first glance, but they are non-trivially different.
-
-The only thing you need to learn here, for now, is how to build an image from a Dockerfile, which is simply
+Then add your private key
 
 ```
-$ docker build -t <image_name>:<image_tag> -f /path/to/Dockerfile .
+ssh-add ~/.ssh/id_ed25519
 ```
 
-`<image_name>` and `<image_tag>` can be mostly whatever you want, and `/path/to/Dockerfile` can be relative. Notice the dot at the end of the command. That is telling Docker that the build context is current directory. For now, you don't need to worry about it.
+3. Add your public key to GitHub using instructions at https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account.
 
-If the build is successful, you will have an image with given name and tag.
+4. Clone the repository using SSH instead of HTTPS
 
-### Running Docker Container
+```
+git clone git@github.com:MHSeals/ROS2-Docker-Crash-Course.git
+```
 
-For very simple cases, `docker run` would be a very simple command. However, unfortunately, it is not so for our case.
+### Prepare your Docker Image
 
-I will provide all necessary Dockerfile, build, test, and run script at a later time.
+The included `generate_config.py` will produce all the scripts you need. You should run
 
-## Robot Operating System (ROS) 🤖
+```bash
+python3 generate_config.py --help
+# or ./generate_config.py --help
+```
 
-### What is it?
+to see the available customization.
 
-It is a standardized communication interface. That's it.
+For example, Windows 11 host with an NVIDIA GPU should run
 
-What that means is hardware abstraction is taken care of for you ahead of time, either by the hardware manufacturer or some good people of the free and open source community, and all you need to do is process a predefined message format.
+```
+python3 generate_config.py --os windows --gpu nvidia
+```
 
-### Why do we need it?
+This will also spawn `pull.sh`, `build.sh`, `test.sh`, and `run.sh`.
 
-For our case, trying to write a program from scratch to talk to various sensors (RealSense, Velodyne, etc.), computing units (Jetson, Raspberry Pi, etc.), and control hardware (Pixhawk, motors, etc.) is tedious, difficult, and requires extremely high level of understanding and coordination to do.
+At this point you'll probably need to build your own image for now. It may take awhile.
 
-ROS allows us to use a simple Python program to gain access and control to all of that, with the only tradeoff being we have to follow the ROS communication standard.
+```
+bash build.sh
+```
 
-### But how can it (or I) do stuff like navigation?
+### Testing the Image
 
-While ROS is practically a communication layer, what you do with the information across such a network is up to your imagination. Whenever you hear a ROS package to do something, say image recognition, what it means is the package itself is an image recognition package, it just so happen that it receives images and response with information through ROS.
+Verify that the rendering string matches your GPU. In my case, that's NVIDIA Quadro P4000.
 
-### Where can I learn more?
+```
+mqt00xx@RVL-PRECISION-001:~/Workspace/Roboboat-Tutorial$ bash test.sh
+OpenGL vendor string: Microsoft Corporation
+OpenGL renderer string: D3D12 (NVIDIA Quadro P4000)
+OpenGL core profile version string: 4.2 (Core Profile) Mesa 23.1.3 - kisak-mesa PPA
+OpenGL core profile shading language version string: 4.20
+OpenGL core profile context flags: (none)
+OpenGL core profile profile mask: core profile
+OpenGL core profile extensions:
+OpenGL version string: 4.2 (Compatibility Profile) Mesa 23.1.3 - kisak-mesa PPA
+OpenGL shading language version string: 4.20
+OpenGL context flags: (none)
+OpenGL profile mask: compatibility profile
+OpenGL extensions:
+OpenGL ES profile version string: OpenGL ES 3.1 Mesa 23.1.3 - kisak-mesa PPA
+OpenGL ES profile shading language version string: OpenGL ES GLSL ES 3.10
+OpenGL ES profile extensions:
+```
 
-YouTube, unfortunately, is a hit-or-miss. It is absurdly hard to find a proper tutorial.
+### Running the Container
 
-I recommend signing up and accessing free contents available at [The Construct](https://www.theconstructsim.com/robotigniteacademy_learnros/ros-courses-library/). They cover a wide range of topics from basic to fairly advance difficulty, and best of all, they have a web-based simulator ready for you to follow.
+The `run.sh` will spawn a *persistent* container, and subsequent execution of `run.sh` will start and attach to the container for you.
 
-I suggest briefly go over some of the basic ones until you are comfortable with how ROS is organized, then moving on to some more advanced topic like distributed ROS over multiple machines. Being able to understand those concepts will help you figure out how to use ROS to solve your boat problem.
+```
+$ bash run.sh
+5e329ff82aea6dd82c7001501e11980be574d3e52fb4ff098bfc2ce9aa25f628
+
+$ bash run.sh
+root@5e329ff82aea:~/roboboat_ws#
+```
+
+And you're in!
+
+### Testing GUI Spawning and Performance
+
+You should be able to spawn GUI windows. You can run a simple test case using `glxgears`. It should spawn a windows with colored gears.
+
+You can also start a simulation with Turtlebot 3 using
+
+```
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch
+```
+
+Turtlebot 4 is also included, but at this time **Windows will crash when trying to use Ignition Gazebo.**
+
+```
+ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py
+```
