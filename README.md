@@ -161,7 +161,7 @@ You should be able to spawn GUI windows. You can run a simple test case using `g
 You can also start a simulation with Turtlebot 3 using
 
 ```
-ros2 launch turtlebot3_gazebo turtlebot3_world.launch
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 ```
 
 Turtlebot 4 is also included, but at this time **Windows will crash when trying to use Ignition Gazebo.**
