@@ -29,11 +29,15 @@ def generate_test_script(test_command, test_name:str = '') -> None:
         file.write('    --tty \\\n')
         file.write('    --rm \\\n')
         file.write('    --privileged \\\n')
-        file.write('    --gpus all \\\n')
         file.write('    --volume /tmp/.X11-unix:/tmp/.X11-unix \\\n')
         file.write('    --env DISPLAY=$DISPLAY \\\n')
         if args.os == 'linux' and args.gpu == 'nvidia':
             file.write('    --runtime nvidia \\\n')
+        elif args.os == 'linux' and args.gpu == 'intel':
+            file.write('    --device /dev/dri/card0 \\\n')
+            file.write('    --device /dev/dri/renderD128 \\\n')
+        elif args.os == 'linux' and args.gpu == 'amd':
+            raise NotImplementedError
         elif args.os == 'windows':
             file.write('    --device /dev/dxg \\\n')
             file.write('    --device /dev/dri/card0 \\\n')
@@ -112,11 +116,15 @@ else:
         file.write('        --detach \\\n')
         file.write('        --name ${CONTAINER_NAME} \\\n')
         file.write('        --privileged \\\n')
-        file.write('        --gpus all \\\n')
         file.write('        --volume /tmp/.X11-unix:/tmp/.X11-unix \\\n')
         file.write('        --env DISPLAY=$DISPLAY \\\n')
         if args.os == 'linux' and args.gpu == 'nvidia':
             file.write('        --runtime nvidia \\\n')
+        elif args.os == 'linux' and args.gpu == 'intel':
+            file.write('        --device /dev/dri/card0 \\\n')
+            file.write('        --device /dev/dri/renderD128 \\\n')
+        elif args.os == 'linux' and args.gpu == 'amd':
+            raise NotImplementedError
         elif args.os == 'windows':
             file.write('        --device /dev/dxg \\\n')
             file.write('        --device /dev/dri/card0 \\\n')
