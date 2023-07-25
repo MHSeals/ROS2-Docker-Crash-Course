@@ -32,6 +32,7 @@ def generate_test_script(test_command, test_name:str = '') -> None:
         file.write('    --volume /tmp/.X11-unix:/tmp/.X11-unix \\\n')
         file.write('    --env DISPLAY=$DISPLAY \\\n')
         if args.os == 'linux' and args.gpu == 'nvidia':
+            file.write('    --gpus all \\\n')
             file.write('    --runtime nvidia \\\n')
         elif args.os == 'linux' and args.gpu == 'intel':
             file.write('    --device /dev/dri/card0 \\\n')
