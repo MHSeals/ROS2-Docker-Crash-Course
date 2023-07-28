@@ -118,6 +118,8 @@ else:
         file.write('        --name ${CONTAINER_NAME} \\\n')
         file.write('        --privileged \\\n')
         file.write('        --volume /tmp/.X11-unix:/tmp/.X11-unix \\\n')
+        file.write('        --volume /tmp/.docker.xauth:/tmp/.docker.xauth \\\n')
+        file.write('        --volume /dev:/dev \\\n')
         file.write('        --env DISPLAY=$DISPLAY \\\n')
         if args.os == 'linux' and args.gpu == 'nvidia':
             file.write('        --gpus all \\\n')
@@ -145,3 +147,40 @@ else:
         file.write('    docker exec -it ${CONTAINER_ID} bash\n\n')
         if args.os == 'linux': file.write("    xhost -local:`docker inspect --format='{{ .Config.Hostname }}' ${CONTAINER_ID}`\n\n")
         file.write('fi\n')
+
+#     generate docker-compose.yml
+#     docker_compose = {
+#         'version': '3',
+#         'services': {
+#             'dev-workspace': {
+#                 'image': image,
+#                 'volumes': [
+#                     '- /tmp/.X11-unix:/tmp/.X11-unix:rw'
+#                     '- /tmp/.docker.xauth:/tmp/.docker.xauth:rw'
+#                     '- /mnt/wslg:/mnt/wslg'
+#                     '- /usr/lib/wsl:/usr/lib/wsl'
+#                     '- .:/root/colcon_workspace'
+#                     '- /dev:/dev'
+#                 ],
+#                 'device_cgroup_rules': [
+#                     '- c 81:* rmw',
+#                     '- c 189:* rmw',
+#                 ],
+#                 'environment': [
+#                     'DISPLAY=$DISPLAY',
+#                     'WAYLAND_DISPLAY=$WAYLAND_DISPLAY',
+#                     'XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR',
+#                     'PULSE_SERVER=$PULSE_SERVER',
+#                 ],
+#                 'restart': 'unless-stopped',
+#                 'command': 'tail -f /dev/null'
+#             }
+#         }
+#     }
+
+#     if args.gpu == 'nvidia':
+#         docker_compose['services']['dev-workspace']['environment'] += ['NVIDIA_VISIBLE_DEVICES=all']
+#         docker_compose['services']['dev-workspace']['runtime'] = 'nvidia'
+
+#     with open(current_path + '/docker-compose.yml', 'w') as file:
+#         pyyaml.dump(docker_compose, file)

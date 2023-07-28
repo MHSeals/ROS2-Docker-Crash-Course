@@ -7,7 +7,7 @@
 | Windows          |   ✅   |
 | MacOS/Apple      |   ❌   |
 | Ubuntu           |   ✅   |
-| Fedora           |   ❓   |
+| Fedora           |   ✅   |
 | Debian           |   ❓   |
 | Arch             |   ❓   |
 
