@@ -33,6 +33,11 @@ docker stop $(docker ps -a -q) && docker system prune -a && clear
 
 ### 2. Clone this repository
 
+#### 2.1 New Repository
+
+If you have not cloned the repository before, then use these commands.
+Otherwise, see 2.2.
+
 With SSH
 
 ```
@@ -43,6 +48,16 @@ With HTTPS
 
 ```
 git clone https://github.com/MHSeals/ROS2-Docker-Crash-Course.git
+```
+
+#### 2.2 Existing Repository
+
+Because I forced the push, it will have different history, meaning you cannot
+simply use `git pull` to update your repository. To solve this, just bring your
+branch to latest.
+
+```
+git reset --hard origin/main && git clean -f -d
 ```
 
 ### 3. Run the script
