@@ -13,8 +13,25 @@
 
 ## Quick Start
 
-1. Setup Docker. See [comprehensive Docker guide](./DOCKER.md).
-2. Clone this repository.
+### Step 1: Setup Docker
+
+See [comprehensive Docker guide](./DOCKER.md).
+
+### Step 1.5: (Optional) Purge old containers and images
+
+Some of you have really limited disk space. To avoid issues, I recommend
+starting fresh with 0 images or containers.
+
+It is highly recommended that you save your work to a repository or your local
+machine. **This will delete ALL containers and everything inside them**.
+
+> ⚠️ **BE SURE TO BACK UP YOUR WORK!!!**
+
+```
+docker stop $(docker ps -a -q) && docker system prune -a && clear
+```
+
+### 2. Clone this repository
 
 With SSH
 
@@ -28,7 +45,7 @@ With HTTPS
 git clone https://github.com/MHSeals/ROS2-Docker-Crash-Course.git
 ```
 
-3. Run the corresponding script
+### 3. Run the script
 
 For example, if you are using Ubuntu, and have NVIDIA GPU, you should run
 
@@ -36,10 +53,10 @@ For example, if you are using Ubuntu, and have NVIDIA GPU, you should run
 ./run_container_ubuntu_nvidia.sh
 ```
 
-4. Run the simulation
+1. Run the simulation
 
 ```
-ros2 launch vrx_gz competition.launch.py world:=sydney_regatta
+ros2 launch vrx_gz competition.launch.py
 ```
 
 You should see a boat (WAMV) floating on the water with some obstacles.
