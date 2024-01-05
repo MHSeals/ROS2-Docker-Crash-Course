@@ -1,5 +1,0 @@
-FROM mhseals/roboboat:latest
-
-ENV LIBVA_DRIVER_NAME=d3d12
-ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
-ENV MESA_D3D12_DEFAULT_ADAPTER_NAME=Intel

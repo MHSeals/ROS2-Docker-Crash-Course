@@ -1,0 +1,197 @@
+FROM ubuntu:jammy
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+SHELL ["/bin/bash", "-c"]
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                             DEFAULT DEPENDENCIES & TOOLS                                             #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+RUN apt-get update && apt-get -y dist-upgrade
+
+RUN apt-get update && apt-get -y upgrade && apt-get -y install \
+    git \
+    curl \
+    wget \
+    build-essential \
+    cmake \
+    lsb-release \
+    gnupg \
+    gnupg2 \
+    locales \
+    net-tools \
+    iputils-ping \
+    netcat \
+    software-properties-common \
+    python3-dev \
+    python3-pip \
+    python-is-python3 \
+    apt-transport-https \
+    apt-utils && \
+    add-apt-repository universe \
+    && apt-get -y autoremove \
+    && apt-get clean
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                                  OPENGL DEPENDENCIES                                                 #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+RUN apt-get update && apt-get -y upgrade && apt-get -y install \
+    libxext-dev \
+    libx11-dev \
+    libglvnd-dev \
+    libglx-dev \
+    libgl1-mesa-dev \
+    libgl1-mesa-glx \
+    libgl1-mesa-dri \
+    libegl1-mesa-dev \
+    libgles2-mesa-dev \
+    libglu1-mesa-dev \
+    freeglut3-dev \
+    mesa-utils \
+    mesa-utils-extra \
+    && apt-get -y autoremove \
+    && apt-get clean
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                              ARDUPILOT SITL DEPENDENCIES                                             #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+ARG BASE_PKGS="build-essential ccache g++ gawk gdb git ninja-build make wget valgrind screen python-is-python3 zip default-jre default-jdk socat"
+ARG SITL_PKGS="libtool libxml2-dev libxml2-utils libxslt1-dev python3-dev python3-pip python3-setuptools python3-numpy python3-pyparsing python3-psutil xterm python3-matplotlib python3-serial python3-scipy python3-opencv libcsfml-dev libcsfml-audio2.5 libcsfml-dev libcsfml-graphics2.5 libcsfml-network2.5 libcsfml-system2.5 libcsfml-window2.5 libsfml-audio2.5 libsfml-dev libsfml-graphics2.5 libsfml-network2.5 libsfml-system2.5 libsfml-window2.5 python3-yaml libpython3-stdlib python3-wxgtk4.0 fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev libtool-bin"
+ARG PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy pexpect geocoder empy==3.3.4 ptyprocess dronecan flake8 junitparser pygame intelhex"
+ARG ARM_PKGS="libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi gcc-11-arm-linux-gnueabi gcc-11-arm-linux-gnueabihf libncurses5-dev build-essential bison flex libssl-dev bc"
+ARG ARM_ROOT=/opt/gcc-arm-none-eabi-10-2020-q4-major
+
+RUN apt-get update && apt-get -y upgrade && apt-get -y install pkg-config && \
+    ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config && \
+    apt-get update && apt-get -y upgrade && apt-get -y install ${BASE_PKGS} ${SITL_PKGS} ${ARM_PKGS} && \
+    python3 -m pip install --upgrade pip setuptools wheel testresources && \
+    python3 -m pip install ${PYTHON_PKGS} \
+    && apt-get -y autoremove \
+    && apt-get clean
+
+RUN mkdir -p ${ARM_ROOT} && \
+    cd ${ARM_ROOT} && \
+    wget -q --show-progress --progress=bar:force https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2 && \
+    tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2 && \
+    rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2 && \
+    ln -s -f $(which ccache) /usr/lib/ccache/arm-none-eabi-g++ && \
+    ln -s -f $(which ccache) /usr/lib/ccache/arm-none-eabi-gcc
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                                 ARDUPILOT SITL SETUP                                                 #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+RUN git clone --recurse-submodules --progress --verbose --branch Rover-4.4.0 https://github.com/ArduPilot/ardupilot.git /root/ardupilot
+
+ENV HOME /root
+ENV ARDUPILOT_ROOT /root/ardupilot
+
+RUN apt-get update && apt-get -y upgrade && apt-get -y install bash-completion \
+    && apt-get -y autoremove \
+    && apt-get clean \
+    echo "source /usr/share/bash-completion/bash_completion" >> ~/.bashrc \
+    echo "source ${ARDUPILOT_ROOT}/Tools/completion/completion.bash" >> ~/.bashrc && \
+    echo "cd ${HOME}" >> ~/.bashrc && \
+    echo "alias waf=/root/ardupilot/waf" >> ~/.bashrc
+
+RUN git clone --recurse-submodules --progress --depth 1 --no-single-branch https://github.com/ArduPilot/Micro-XRCE-DDS-Gen.git  /root/dds-gen \
+    && cd /root/dds-gen \
+    && ./gradlew assemble
+
+ENV PATH "/root/dds-gen/scripts:usr/lib/ccache:${ARDUPILOT_ROOT}/Tools/autotest:${ARM_ROOT}/bin:${PATH}"
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                                     LIBREALSENSE2                                                    #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+RUN curl -sSf https://librealsense.intel.com/Debian/librealsense.pgp | tee /etc/apt/keyrings/librealsense.pgp > /dev/null && \
+    echo "deb [signed-by=/etc/apt/keyrings/librealsense.pgp] https://librealsense.intel.com/Debian/apt-repo `lsb_release -cs` main" | tee /etc/apt/sources.list.d/librealsense.list && \
+    apt-get update && apt-get -y upgrade && apt-get -y install \
+    librealsense2-utils \
+    librealsense2-dev \
+    librealsense2-dbg
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                                ROS HUMBLE INSTALLATION                                               #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+ENV ROS_WS /root/ros_ws
+ENV ROS_SRC /root/ros_ws/src
+ENV ROS_DISTRO humble
+ENV ROS_PYTHON_VERSION 3
+ENV QT_X11_NO_MITSHM 1
+ENV TERM xterm-256color
+ENV LANG en_US.UTF-8
+
+RUN locale-gen en_US en_US.UTF-8 && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && \
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
+    apt-get update && apt-get -y upgrade && apt-get -y install \
+    ros-${ROS_DISTRO}-desktop \
+    ros-${ROS_DISTRO}-ros2-control \
+    ros-${ROS_DISTRO}-ros2-controllers \
+    ros-${ROS_DISTRO}-cartographer \
+    ros-${ROS_DISTRO}-cartographer-ros \
+    ros-${ROS_DISTRO}-navigation2 \
+    ros-${ROS_DISTRO}-nav2-bringup \
+    ros-${ROS_DISTRO}-velodyne* \
+    ros-${ROS_DISTRO}-realsense2* \
+    ros-${ROS_DISTRO}-librealsense2* \
+    ros-${ROS_DISTRO}-mavros* \
+    ros-${ROS_DISTRO}-mavlink* \
+    ros-${ROS_DISTRO}-launch-pytest \
+    ros-dev-tools \
+    python3-rosdep \
+    python3-colcon-common-extensions \
+    && apt-get -y autoremove \
+    && apt-get clean
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                                    GAZEBO HARMONIC                                                   #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null && \
+    apt-get update && apt-get -y upgrade && apt-get -y install \
+    gz-garden
+
+ENV GZ_VERSION garden
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                                  ROS WORKSPACE SETUP                                                 #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    mkdir -p ${ROS_SRC} && \
+    cd ${ROS_SRC} && \
+    wget https://raw.githubusercontent.com/ArduPilot/ardupilot_gz/main/ros2_gz.repos && \
+    vcs import --recursive ${ROS_SRC} < ros2_gz.repos && \
+    rm -f ros2.repos ros2_gz.repos
+
+RUN git clone --progress --branch humble https://github.com/ArduPilot/ardupilot_ros.git ${ROS_SRC}/ardupilot_ros
+
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    cd ${ROS_WS} && \
+    apt-get update && \
+    rosdep init && \
+    rosdep update && \
+    rosdep install --rosdistro $ROS_DISTRO --from-paths src -i -r -y && \
+    colcon build --packages-up-to ardupilot_ros ardupilot_gz_bringup
+
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc && \
+    echo "source ${ROS_WS}/install/local_setup.bash" >> ~/.bashrc
+
+RUN /opt/ros/humble/lib/mavros/install_geographiclib_datasets.sh
+
+RUN apt-get -y purge modemmanager brltty && \
+    apt-get -y autoremove && apt-get clean
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#                                                    NVIDIA GRAPHICS                                                   #
+# -------------------------------------------------------------------------------------------------------------------- #
+
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES all

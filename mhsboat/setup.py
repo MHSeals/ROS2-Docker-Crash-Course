@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'mhs_roboboat'
+package_name = 'mhsboat'
 
 setup(
     name=package_name,
@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'test_node = mhs_roboboat.test_node:main'
+            'boat_ctrl = mhsboat.boat_ctrl:main'
         ],
     },
 )
