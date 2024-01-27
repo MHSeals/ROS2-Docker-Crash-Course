@@ -1,0 +1,4 @@
+FROM mqt0029/roboboat:sitl
+
+ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
+ENV LIBVA_DRIVER_NAME=d3d12
